@@ -1,0 +1,1 @@
+UART console (led/btn commands) in a console task + buttonTask: B1 toggles LD1 (FreeRTOS)

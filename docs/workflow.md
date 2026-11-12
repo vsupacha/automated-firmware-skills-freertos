@@ -1,0 +1,453 @@
+# Workflow contract for every skill
+
+> **This repository** (FreeRTOS skills, split 2026-11-12) keeps this copy of the original repository's
+> contract ([automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills)). Sections
+> about other toolchains and skills refer to the original repository; the FreeRTOS skills follow every
+> shared rule here.
+
+Every skill in `skills/` drives one toolchain with one framework for one board, named
+**`<toolchain>-<framework>-<board>`** (lowercase, hyphens only between the three parts), e.g.
+`cubemx-hal-stm32f407disco`, `cubemx2-hal2-stm32c562nucleo`, `pio-espidf-esp32s3box`,
+`modus-pdl-edgitalk`. Related boards of the same MCU may share a skill as extra board profiles
+(`boards/<id>/<skill>/`), e.g. another PSOC Edge E84 kit under `modus-pdl-edgitalk`.
+All skills follow the same milestones, stage numbers, script names, gate lines and exit codes, so
+an agent (or a developer) can drive any board the same way and a port to another MCU/toolchain is
+proven by the **same tests**. These board skills are the M1 outcome; skills of the later milestones
+(board drivers, execution models, components, profiling) build on them through the `board.h` API.
+
+Reference implementations:
+
+| Skill | Toolchain | Board | Notes |
+| --- | --- | --- | --- |
+| [modus-pdl-edgitalk](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/modus-pdl-edgitalk/SKILL.md) | ModusToolbox, make, OpenOCD | Edgi-Talk | vendor IDE toolchain, external probe |
+| [cubemx2-hal2-stm32c562nucleo](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/cubemx2-hal2-stm32c562nucleo/SKILL.md) | STM32CubeMX2 CLI, CMake, STM32CubeProgrammer | NUCLEO-C562RE | code generator, on-board ST-LINK |
+| [cubemx2-freertos-stm32c562nucleo](../skills/cubemx2-freertos-stm32c562nucleo/SKILL.md) | STM32CubeMX2 CLI + FreeRTOS middleware, CMake, STM32CubeProgrammer | NUCLEO-C562RE | first M3 execution-model skill: same board, bench file and tests as the bare-metal skill; code in tasks, HAL tick on TIM6 |
+| [pio-arduino-rpipico2w](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/pio-arduino-rpipico2w/SKILL.md) | PlatformIO, picotool | Pico 2 W | native USB, no probe |
+| [pio-espidf-esp32s3box](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/pio-espidf-esp32s3box/SKILL.md) | PlatformIO + ESP-IDF, esptool | ESP32-S3-BOX | USB Serial/JTAG, no probe; shares `lib/func` |
+| [cubemx-hal-stm32n6570dk](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/cubemx-hal-stm32n6570dk/SKILL.md) | STM32CubeMX 6.18 (headless), STM32CubeN6 HAL, CMake | STM32N6570-DK | M1 build stages only; FSBL in internal SRAM; shares `lib/func` |
+| [cubemx-hal-stm32f407disco](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/cubemx-hal-stm32f407disco/SKILL.md) | STM32CubeMX 6.18 (headless), STM32CubeF4 HAL, CMake | STM32F407G-DISC1 | M1 build, connect, flash (test planned); console SWO output (ST-LINK/V2, no VCP); shares `lib/func` |
+| [cubemx-hal-stm32l475iot](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/cubemx-hal-stm32l475iot/SKILL.md) | STM32CubeMX 6.18 (headless), STM32CubeL4 HAL, CMake, STM32CubeProgrammer | B-L475E-IOT01A | M1 incl. board stages; ST-LINK/V2-1 VCP console (RX by interrupt: no USART FIFO); shares `lib/func` |
+| [cubemx-hal-stm32wb55nucleo](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/cubemx-hal-stm32wb55nucleo/SKILL.md) | STM32CubeMX 6.18 (headless), STM32CubeWB HAL, CMake, STM32CubeProgrammer | NUCLEO-WB55RG | M1 incl. board stages (debug planned); CM4 application only, wireless stack untouched; `.ioc` from `loadboard` + `clearpinout`; shares `lib/func` |
+| [pio-arduino-esp32s3box](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/pio-arduino-esp32s3box/SKILL.md) | PlatformIO + Arduino, esptool | ESP32-S3-BOX | same board, Arduino style: `<Arduino.h>` API in every layer, own Arduino func/ |
+| [pio-arduino-unor4wifi](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/pio-arduino-unor4wifi/SKILL.md) | PlatformIO + Arduino (renesas-ra), bossac | UNO R4 WiFi | RA4M1 through the ESP32-S3 USB bridge (1200 baud touch, no read-back); Arduino style like the BOX skill, `console_printf()` |
+| [mcux-sdk-frdmmcxn947](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/mcux-sdk-frdmmcxn947/SKILL.md) | MCUXpresso SDK 26.09 (west), Arm GNU 14.2 + Ninja (MCUXpresso Installer), Kitware CMake, LinkServer 26.5 | FRDM-MCXN947 | M1 incl. board stages (debug planned); LinkServer `-u none`, internal flash only; app = `west export_app` of hello_world, trimmed; VS Code project files written directly; never ST tools |
+
+## Milestones (summary)
+
+Five milestones, bottom-up - each firmware layer is proven on the real board before the next one is
+generated on top of it: **M1 bring-up** (tools, project, IDE, build, connect, flash, test, debug),
+**M2 board support** (drivers behind `board.h`, layer checks), **M3 execution model** (bare metal /
+RTOS / Zephyr / RT-Thread, checked from an on-board trace), **M4 components** (LVGL, USB, file
+system, network ...), **M5 application + profiling**. Goals, outcomes, the trace design and the
+current status of every skill: [milestones.md](https://github.com/vsupacha/automated-firmware-skills/blob/main/docs/milestones.md). The stage table below says which
+milestone each stage belongs to; `milestones.env` says which milestones are active.
+
+## Stages
+
+Stage numbers are shared by all skills; a skill's SKILL.md maps them to its own sections.
+
+| Milestone | # | Stage | Script (same name in every skill) | Gate | Board |
+| --- | --- | --- | --- | --- | --- |
+| **M1 bring-up** | 0 | help | `help.sh [--en]` | - | no |
+| | 1 | setup | `check_tools.sh <board>` | `missing/bad=0` | no |
+| | 1b | tool updates | `update_tools.sh <board> [--apply --yes]` (STM32 CubeMX skills; RT-Thread in its own repository) - see [Tool updates](#tool-updates) | `UPDATE: NONE` / `UPDATE: APPLIED n` | no |
+| | 2 | create | `new_app.sh <board> <app> [ws\|""] [template] [--no-open]` (+ `regen.sh` for generator tools) | `Created ...` / `REGEN: PASS` | no |
+| | 2d | open in IDE | `open_ide.sh <app> [--no-open]` (new_app.sh runs it) - see [IDE handoff](#ide-handoff-stage-2d) | `IDE: READY` | no |
+| | 2e | code | edit `src/` in layers (board > func > app) - the developer in the IDE or the agent; rules: [board-api.md](board-api.md) | stage 3 build + stage 9 layer check | no |
+| | 3 | build | `build.sh <app>` | `BUILD: PASS` + manifest | no |
+| | 4 | connect | `discover.sh <board>` | `IDENTITY: PASS` | yes |
+| | 5 | flash | `flash.sh <app> --yes` (**ask the developer first**) | `FLASH: PASS` | yes |
+| | 6 | test | `serial_test.py auto <spec> <log> --board <b> [--interactive]`; unit tests of `func/` on the board: `unit_test.sh <app> [--yes] [--build-only \| --read-only]` (Unity + test log; Pico 2 W, ESP32-S3-BOX, WB55 - see [Firmware tests](#firmware-tests-stage-6-unit-tests-and-tdd)) | `RESULT: PASS`; `UNIT: PASS (n/n, test log agrees)` | yes |
+| | 7 | debug | `debug.sh status <board>` (read-only core + fault registers) and `debug.sh run <app> <scenario.json>` (attach, scripted break / watch / step / print / read) - STM32 skills C5 + L475 so far; engine `lib/fwdebug.py` | `DEBUG: STATUS ...` / `DEBUG: PASS` | yes + probe |
+| **M2 board support** | 8 | board drivers | *(planned)*: pin/peripheral map from the board sources, `board.h` drivers, per-peripheral `tests/*.json` (run with stage 6) | `RESULT: PASS` per peripheral | yes |
+| | 9 | layer check | `python lib/check_layers.py <app>` | `LAYERS: PASS` | no |
+| | 10 | host test *(optional)* | `bash lib/host_test.sh [<app>]`: `func/` with a test stub `board.h` on the PC | `HOST: PASS` | no |
+| **M3 execution model** | 11 | execution + trace | *(planned)*: superloop / RTOS execution layer; trace ring buffer read over the console or the debugger, rules in `tests/*.json` | `TRACE: PASS` | yes |
+| **M4 components** | 12 | components | *(planned)*: add a middleware component with its adapter and demo test | `RESULT: PASS` | yes |
+| **M5 application + profiling** | 13 | profile | *(planned)*: cycles per function, stack high-water, RAM/flash from the map file, against budgets | `PROFILE: PASS` | yes |
+| all | 14 | export | `export_app.sh <app>` *(planned)*: standalone AI-assisted project - see [three ways out](#three-ways-out-of-the-pipeline) | `EXPORT: PASS` | no |
+| | 15 | port | `port.sh <app> --to <skill>:<board>` *(planned)* | target passes its milestones with the **same** `tests/*.json` | target |
+| | 16 | clean | `clean.sh [--apps] [--yes]` | `CLEAN: done` | no |
+
+Every board skill's SKILL.md uses these shared stage numbers in its `## Stage <n>` headings (the
+validator checks them). `<app>` in a command after stage 2 is the **app folder** that `new_app.sh` prints (`Created <folder>`), as a path -
+`apps/my-app`, or `C:/fw-ws/my-app` with a per-PC [apps workspace](#apps-workspace); a bare app name is rejected
+with a usage line. `<board>` is a board id from `boards/index.json`.
+
+Stage 4 (connect) may run before stage 2 - it only needs the board, not an app.
+
+### Three ways out of the pipeline
+
+AI generation is a starting point, never a lock-in. After any gate the developer may leave the
+agent-driven path:
+
+```
+1 setup ─► 2 create ─┬─► A  IDE path (developer):  2d open_ide ─► edit, build, flash, debug in VS Code
+check_tools  new_app │                             (the vendor extension's own buttons)
+                     │        ▲ switch any time - same app folder, same build outputs ▼
+                     ├─► B  script path (agent):   3 build ─► 4 connect ─► 5 flash ─► 6 test ─► 9 layers ...
+                     │
+                     └─► C  standalone project:    14 export_app ─► the app + the skills, scripts, board
+                                                   profile and tests it uses, as a project of its own
+```
+
+- **A - IDE path.** `new_app.sh` ends with stage 2d and opens the app in VS Code, so the developer
+  can code, build, flash and debug themselves right after creation or after any later gate.
+- **B - script path.** The agent runs the stages behind their gates. A and B share one project:
+  the IDE builds the same configuration into the same folder as `build.sh`, and code edited in the
+  IDE goes through the same gates when the agent runs the scripts again (`build.sh`,
+  `check_layers.py`, `flash.sh` with its identity check, `serial_test.py`).
+- **C - standalone AI-assisted project** *(planned, stage 14)*. `export_app.sh` copies the app
+  together with the skills, `lib/` scripts, board profile and tests it uses into a project of its
+  own (`.claude/skills/`, `CLAUDE.md`, `tests/`), so an agent can keep developing it outside this
+  repo - with the same gates, without the other boards and toolchains.
+- **Agents follow the developer's choice.** On the IDE path the agent stops after stage 2d and
+  only runs scripts when asked ("build it", "test it"); it never overwrites files the developer is
+  editing. Asked to continue on the script path, it re-runs the gates from stage 3.
+
+Worked example: [Edgi-Talk on the IDE path](https://github.com/vsupacha/automated-firmware-skills/blob/main/docs/walkthrough-edgi-talk-ide.md) (prompts, outputs, both paths).
+
+**Release scope:** `<repo>/milestones.env` (`ACTIVE_MILESTONES`, override `FW_ACTIVE_MILESTONES`)
+lists the milestones a release activates. Scripts of an inactive milestone call
+`require_milestone` (lib/common.sh) and stop with `ACTION: SETUP` (exit 10). Enabling a milestone
+is the developer's decision, never the agent's. M1 includes the board stages; flashing stays behind
+its own approval: `flash.sh` needs `--yes`, which the agent passes only after the developer said yes
+(see [Hardware-dependent testing](#hardware-dependent-testing)).
+
+## IDE handoff (stage 2d)
+
+Every skill must hand each app it creates over to the toolchain's IDE, so a developer can take over
+at any point - edit the code, build, flash, debug and test by hand - and go back to the scripts
+later. The IDE is **VS Code with the toolchain vendor's extension**:
+
+| Toolchain | VS Code extension (`IDE_EXT` in env.sh) | Workspace file | Made by |
+| --- | --- | --- | --- |
+| ModusToolbox | Infineon ModusToolbox for VS Code (`infineonag.modustoolbox-for-vscode`) | `<app>.code-workspace` + `.vscode/` | ModusToolbox's own `make vscode` (this PC's tool paths: git-ignored, re-made per PC) |
+| STM32CubeMX / STM32CubeMX2 | STM32CubeIDE for Visual Studio Code (`stmicroelectronics.stm32-vscode-extension`) | `<app>.code-workspace` (`mx/`, `src/`, `tests/` as folders) + `mx/.settings/*.store.json`, `mx/.vscode/{settings,launch}.json` | `lib/common.sh` `fw_vscode_cube_setup`, from the board profile's pinned bundles |
+| PlatformIO | PlatformIO IDE (`platformio.platformio-ide`) | `<app>.code-workspace` (the app folder; `platformio.ini` at its root); PlatformIO IDE adds `.vscode/` | `lib/common.sh` `fw_code_workspace` |
+
+Rules for `open_ide.sh <app> [--no-open]`:
+
+1. **Same project, same outputs.** The IDE must build the same configuration into the same folder as
+   `build.sh` (Makefiles + `build/`, CMake preset + `mx/build/<preset>`, PlatformIO env +
+   `.pio/build/<env>`) with the same pinned tools - never a second copy of the project.
+2. **Open the workspace file, never the app folder** (STM32Cube: CMake project at a workspace
+   folder root; ModusToolbox: multi-project apps). IDE files (`<app>.code-workspace`, `.vscode/`)
+   are generated - some hold this PC's tool paths - so they are git-ignored for every skill and
+   `open_ide.sh` re-makes them on each PC; never put settings a build needs only there.
+3. **Gate** `IDE: READY <workspace>` (then `IDE: OPENED`, or `IDE: not opened` with `--no-open`).
+   VS Code or the extension missing = `ACTION: SETUP` (exit 10): installing them is the developer's.
+   `IDE: OPENED` is printed only after the `code` CLI has handed the workspace to VS Code (the CLI
+   runs in the foreground; a backgrounded CLI is killed with the calling shell); a CLI that fails =
+   `ACTION: SETUP` (open the workspace by hand).
+   `new_app.sh` runs it at the end (`--no-open` for headless runs) and only reports a missing IDE.
+4. Print where the IDE's build / flash / debug / monitor buttons are and how they map to the scripts.
+   What a developer does in the IDE (e.g. flashing without the identity gate) is their call; an
+   agent still flashes with `flash.sh` behind its gates.
+
+## Exit codes and developer actions
+
+| Exit | Meaning | Agent does |
+| --- | --- | --- |
+| 0 | gate passed | next stage |
+| 1 | failed | read the log, fix, re-run (never skip the gate) |
+| 2 | passed with warnings (build, layer check) | fix the warnings in `src/`/`board`/`func`/`main` |
+| **10** | **developer action needed** - the script printed `ACTION: <TYPE> <what to do>` | relay the action word for word, wait for the developer's OK, re-run the same command |
+
+`ACTION` types (helper `need_user` in `lib/common.sh`):
+
+| Type | Meaning | Examples |
+| --- | --- | --- |
+| `SETUP` | install or change the developer's system | ModusToolbox Setup (Infineon account, admin), VS Code + the toolchain extension, STM32CubeMX2 / STM32Cube for VS Code bundles and packs (licence acceptance), PlatformIO, drivers (WinUSB/Zadig), `git core.longpaths`, moving a workspace off an unsafe path |
+| `CONNECT` | plug something in / boot mode | board or probe USB, Pico BOOTSEL held at power-up |
+| `POWER_CYCLE` | unplug + replug | a board whose display firmware needs a power cycle after flashing |
+| `JUMPER` | switches, solder bridges, accessories | Nucleo SB8 (LD1 vs D13), unplug an accessory that holds a button line |
+| `APPROVE` | irreversible or destructive step | flash (overwrites firmware), `clean.sh --apps`, backups |
+| `CHOOSE` | the developer must pick | several boards connected (`--serial`); the apps workspace of a new PC ([Apps workspace](#apps-workspace)) |
+| `PRESS` / `OBSERVE` | inside interactive tests (`ACTION >>>` lines of `serial_test.py`) | press SW1/B1/BOOTSEL, look at an LED |
+
+When several choices are pending at once (a new app: board, skill, template, next step), the agent
+may offer the [web-wizard](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/web-wizard/SKILL.md) tool skill - one browser form instead of
+console questions - with the user's consent; the answers still go through the gated scripts.
+
+**Never** done by a skill, even when asked inside a script run (stop and hand over): change device
+life cycle / read-out protection / option bytes / OTP / eFuses / secure boot, upgrade probe firmware
+(KitProg3 fw-loader, STLinkUpgrade), run installers with admin rights.
+
+Everything else - path checks, versions, packs, identity, generation, layering, build, flash and
+verify, serial tests - runs automatically behind the gates.
+
+## Architecture: BSP/drivers > logic > execution (M2-M5)
+
+```
+execution   main / app_main / tasks   superloop today; FreeRTOS / Zephyr / RT-Thread tasks (M3)
+logic       func/   (lib/func)        portable C services: console, led, button ... board.h only
+board       board/  (board.h API)     the port boundary: one API, one implementation per board
+BSP/driver  generated / vendor        ModusToolbox BSP, CubeMX mx/, arduino-pico core (never edit)
+```
+
+- `lib/func` is shared unchanged by modus-pdl-edgitalk, cubemx2-hal2-stm32c562nucleo, cubemx2-freertos-stm32c562nucleo and pio-espidf-esp32s3box
+  (cubemx2-freertos-stm32c562nucleo runs the same services from FreeRTOS tasks - see its SKILL.md "FreeRTOS execution model").
+  Arduino skills (pio-arduino-rpipico2w, pio-arduino-esp32s3box, pio-arduino-unor4wifi) keep an Arduino-style C++ func/ in their
+  templates (`<Arduino.h>`, Print/Stream, millis) - same console protocol and tests. It may include only `board.h` and the C library.
+- `board.h` is the same API on every board: init, millis/delay, LEDs (write/read/name), buttons
+  (read/name/pin), console getc/flush, printf to the console - the contract is
+  [board-api.md](board-api.md).
+- Checks: `check_layers.py` (includes, vendor calls, `#if BOARD_*` per layer) and the optional
+  `host_test.sh` (the func services against `lib/host`'s test stub of the board: console line editing and dispatch, LED
+  numbering and read-back, button debounce and events). The host test needs a host C compiler
+  (gcc, clang or Visual Studio C++ with the Windows SDK).
+- Services expose init/poll functions; the execution layer decides how they run (a superloop calls
+  `*_poll()`, an RTOS wraps them in tasks) - this is what makes the M3 execution models mechanical.
+- Console protocol (test contract): `READY`, `INFO app=.. v=.. board=<id> ...`, `OK ...`,
+  `ERR <reason>`, `EVT ...`, `<TAG> k=v ...`.
+
+**Build gate across runs.** `BUILD: PASS` needs 0 warnings in the app's own sources. An
+incremental build only recompiles changed files, so `build.sh` keeps `<app>/logs/.warnings-pending`
+after a build with warnings and makes the next build a clean rebuild until a build passes with none
+(an unchanged re-run can no longer pass). `--allow-warnings` passes the gate but keeps the mark.
+Every skill must also make sure the compiler is allowed to warn at all - e.g. PlatformIO's
+renesas-ra builder passes `-w`, which the UNO R4 skill removes with `build_unflags = -w`.
+
+## Test specs (`tests/*.json`)
+
+Every template ships its test contract in `tests/<name>.json`; the engine is `lib/fwtest.py`
+(each skill's `serial_test.py` is a thin wrapper). Keys:
+
+| Key | Meaning |
+| --- | --- |
+| `baud` | console baud rate (default 115200) |
+| `boot` `{expect, timeout}` | boot marker for `--wait-boot` (e.g. `READY`) |
+| `sync` `{send, expect}` | default `--sync`: send `info` every second until `READY` |
+| `steps[]` | in order; each has a `name` and any of the keys below |
+| `send` | a line to send (CR appended) |
+| `expect` | substrings that must **all** appear, in any order, in lines received during the step |
+| `expect_re` | Python regexes that must each match some received line (`re.search`) |
+| `timeout` / `pause` | seconds to wait for the expectations (default 2) / after the step (default 0.3) |
+| `interactive` + `prompt` | needs a person (`--interactive`); `{btn1}`... become the board's `BTN_LABELS` |
+| `requires_re` | skip the step unless a line seen so far matches (board capabilities, e.g. `leds=[2-9]`) |
+
+Writing specs:
+- **JSON escaping:** a backslash in a regex must be doubled (`"\\d+"`); `"\b"` is a JSON backspace,
+  not a word boundary - prefer character classes (`[0-9]`, `[^0-9]`) where they read as well.
+- **`INFO app=<name>`** is the template's `APP_NAME`, not the app folder: the specs match it. Keep it
+  (or change the spec with it) when you copy a template into an app with another name.
+- **Timing is not measured.** `expect` only proves that lines arrived within `timeout`; a period
+  (e.g. blink every 0.25 s) is checked through the INFO line the firmware reports, and a step
+  timeout only gives a loose upper bound. Measured intervals are a planned engine feature.
+- Lines may follow a shell prompt (RT-Thread `msh />`), so specs for such consoles match without `^`.
+
+## Firmware tests (stage 6 unit tests) and TDD
+
+Unit tests run **on the board, in a separate test image** of the app: Unity test cases of `func/`
+code, built from the same project with the app's `main` / `app_main` replaced by the test runner.
+The tool skill [firmware-test](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/firmware-test/SKILL.md) holds the procedure, tools and
+pass criteria; this section is the contract. (The RT-Thread skills in
+automated-firmware-skills-rtthread use the same terms and test log layout with RT-Thread's utest.)
+
+**Terms** (standard test vocabulary; the names are also the file names):
+
+| Term | What it is here | Files |
+| --- | --- | --- |
+| module under test | a `func/` module (`led`, `button`, `console`, `gesture`, `fxscale` ...) | `src/func/<module>.c(pp)` |
+| **test driver** | the code ABOVE the module: Unity test cases that call it and check the results, plus the runner that starts them (`setUp` / `tearDown`, start-byte handshake) | PlatformIO: `test/test_func/test_driver.cpp`; CubeMX (WB55): `test/test_driver_main.c` + `test_driver.h` + suites `test/test_<module>.c` |
+| **test stub** | stands in for the layer BELOW the module (`board.h`): inputs set by the test (time, button level, console text, a failing LED write), outputs recorded for it (LED level, write count, console output) | PlatformIO: `test/test_func/test_stub.cpp/.h` (`test_stub_*` controls); suites with their own stub clock (`test_stub_now` in `test_gesture.c`); host: `lib/host/board.h` + `test_stub.c` |
+| **test log** | the verdicts in RAM (`fw_test_log`, magic `FWTL` = 0x4C545746, version 1: cases, passed, failed, running, current, last_fail, ring of `PASS\|FAIL <case>` lines), filled by `setUp` / `tearDown`, printed after Unity's summary as `TESTLOG: cases=.. passed=.. failed=.. running=0 last_fail=..`, then `UNIT-DONE`; a probe can read the same record without the console | `lib/test_func/test_log.c/.h` (copied unchanged into the PlatformIO templates) |
+| device driver | the real driver the board layer calls (HAL, Arduino core) - never "the driver" of a test | vendor code |
+
+**Commands** (per skill; nothing flashes without the developer's yes):
+
+| Skill | Command | Test image |
+| --- | --- | --- |
+| pio-arduino-rpipico2w | `unit_test.sh <app> [--yes] [--build-only \| --read-only] [--filter <glob>]` | `[env:<env>_unit]` (`pio test`, `src/func` + `test/` only), flashed with `flash.sh --uf2` |
+| pio-arduino-esp32s3box | `unit_test.sh <app> [--yes] [--build-only \| --read-only] [--filter <glob>]` | `[env:<env>_unit]`, manifest, flashed with `flash.sh --env <env>_unit` |
+| cubemx-hal-stm32wb55nucleo | `unit_test.sh <app> [--yes] [--build-only \| --read-only]` | the CubeMX project built again with `-DFW_UNIT=ON` into `mx/build/Unit`, flashed with `flash.sh --elf` |
+
+`--build-only` builds the test image and stops (`UNIT-BUILD: PASS`, image sha256; no board).
+Without `--yes` the script builds and stops with `ACTION: APPROVE` (the test image replaces the
+app). `--read-only` only reads a test image already on the board (reset or replug it first: a
+finished run sends nothing more). Every script reads the results with `lib/unity_read.py`: the test
+image prints `UNIT-WAIT ...` until it receives a byte, the reader sends it, collects Unity's result
+lines and summary, the `TESTLOG:` line and `UNIT-DONE`, and prints the gate.
+`fw_pio_test_dir` (PlatformIO) and the WB55 script refresh the runner / test log files in the app on
+every run; an app from before these names keeps its old `test/` under `logs/` (PlatformIO) or is
+renamed in place (WB55).
+
+**Gate:** `UNIT: PASS (n/n, test log agrees)` only when Unity's summary reports 0 failures, there
+are as many result lines as tests (no lost output), and the test log agrees: `running=0`, `cases` =
+Unity's tests, `failed` = Unity's failures, `passed + failed = cases`, `last_fail` = Unity's last
+failing case. Anything else is `UNIT: FAIL (<reason>)` - a missing summary, lost lines, no
+`TESTLOG:` line (an old test image) or a disagreeing log.
+
+**TDD loop on the board** (red - green - refactor; each turn = build + flash + read, about 20 s on
+the WB55):
+
+1. **Red** - write the test driver case first (a new `RUN_TEST` in `test_driver.cpp`, or a case in
+   `test/test_<module>.c`), with an empty or stub implementation of the new behaviour in `func/`.
+   `unit_test.sh <app>` builds, asks, flashes (`--yes`, or `FLASH_POLICY=auto` that the developer
+   wrote into the bench file for a lab board - never the agent), reads -> `UNIT: FAIL` naming the
+   new case. A test that passes before the code exists tests nothing - fix the test.
+2. **Green** - the smallest change in `func/` that passes -> `UNIT: PASS (n/n, test log agrees)`.
+3. **Refactor** with the tests green; then the template's serial spec (`serial_test.py`) on the
+   app image (`flash.sh <app> --yes` puts the app back), so the app still behaves.
+4. Keep the evidence: the log `<app>/logs/unit-<stamp>.log` of each run; report red and green
+   separately.
+
+Rules: a case must not depend on another case's order or leftovers (`setUp` resets the test stub);
+the test stub, not the real board, provides every input of a `func/` case; the test image never
+writes flash or option bytes; levels stay honest - built (`UNIT-BUILD: PASS`) != flashed != tested
+(`UNIT: PASS`).
+
+## Hardware-dependent testing
+
+- **Board type vs bench instance:** what is the same for every copy of a board is in `boards/`;
+  what differs per PC or physical board (probe serial, COM port) is in `<ws>/.bench/<id>.env`,
+  written by `discover.sh`. Never commit bench data, user paths or serials.
+- Tests skip what the board lacks (`requires_re` on the INFO line) and what needs a human
+  (`interactive`); planned: `requires_bench` for bench capabilities (debug probe, loopback wires,
+  attached sensors) so a missing tool is reported as *skipped*, not *failed*.
+- **One run per board:** discover, flash, test (and backup / identity check) take a lock
+  `<ws>/.bench/<id>.lock/` (owner: host, pid, tool, time) for their whole run; a second session gets
+  `board '<id>' is in use` (exit 1: wait, re-run). Scripts called by a lock holder inherit it; a lock
+  whose process is gone, or that arrived from another PC through a synced folder, is replaced.
+- **Flash approval:** `flash.sh` needs `--yes` (the agent asked the developer) unless the
+  developer wrote `FLASH_POLICY=auto` into `<ws>/.bench/<id>.env` for a dedicated lab board
+  (default `ask`; discover.sh keeps the line when it rewrites the file). Only the file counts - an
+  environment variable cannot switch approval off - and an agent never writes it.
+- Report verification levels separately: source → generated → built → flashed → booted (READY) →
+  tested (PASS n/m) → observed by a human. Add a dated line to `boards/<id>/<skill>/README.md`.
+
+## Apps workspace
+
+The apps workspace is the folder where `new_app.sh` creates apps and where `.bench/` (this PC's
+probe serials and console ports) lives. Build outputs stay inside each app, so the IDE and the
+scripts keep sharing one folder. The scripts use the first of these that is set:
+
+1. the workspace argument of `new_app.sh` / `clean.sh` (this app or this run only);
+2. the skill's `<PREFIX>_WS` variable ([overrides](#common-options));
+3. **this PC's workspace**: `FW_WS` in the environment, else `FW_WS=` in `~/.fw-skills.env`
+   (`FW_SETTINGS` names another file). The file is per PC: never in git, never synced;
+4. `<project>/apps`: the repo's `apps/` inside the repo checkout, else `./apps`.
+
+`lib/fw_workspace.sh` shows the workspace in use (`WORKSPACE: <dir> (<source>)`) and saves the choice
+for this PC: `bash lib/fw_workspace.sh set C:/fw-ws` (`unset` goes back to `<project>/apps`).
+
+**Asked once per PC.** When nothing above chose a workspace and `<project>/apps` is in a synced
+folder (Dropbox, OneDrive, Google Drive) or makes the app path longer than the toolchain allows,
+`new_app.sh` creates nothing and stops with `ACTION: CHOOSE` (exit 10). The agent asks the developer,
+runs `fw_workspace.sh set` with the answer and re-runs `new_app.sh`:
+
+- **outside the synced folder** (recommended, e.g. `C:/fw-ws`): no locked files while generating or
+  building, build outputs are not synced, short paths. The apps then live only on this PC - commit
+  real projects to git; test apps are never committed anyway.
+- **keep `<project>/apps`**: apps sync with the repo folder; pause sync if generation or a build
+  fails on locked files, and keep app names short when the path is long.
+
+Why the path length matters: Windows tools fail beyond 260 characters, and CMake (STM32 skills)
+repeats the app path inside `mx/build/.../CMakeFiles/` because `src/` sits outside `mx/`. With a
+98-character app folder the deepest object file was 248 characters. Each skill's `new_app.sh`
+therefore limits the app path (100 for the CubeMX classic and PlatformIO ESP32/UNO skills, 110 for
+CubeMX2, 120 for ModusToolbox and the Pico).
+
+`.bench/` follows the workspace: after changing it, run `discover.sh <board>` again before flashing.
+`serial_test.py`, sensor-debug and web-wizard read the same setting (`lib/fwpaths.py`).
+
+**One workspace for all three repositories.** automated-firmware-skills,
+automated-firmware-skills-rtthread and automated-firmware-skills-freertos read the same
+`~/.fw-skills.env`, so on one PC they use the same workspace and the same `.bench/`. Board id `edgi-talk` is in both (`modus-pdl-edgitalk` here,
+`scons-rtthread-edgitalk` in automated-firmware-skills-rtthread): they share `.bench/edgi-talk.env` and its lock - one session
+at a time uses the board, the last `discover.sh` writes the file (same KitProg3, same keys), and a
+`FLASH_POLICY=auto` line applies to both skills. To keep them apart, give one skill its own
+workspace with `<PREFIX>_WS`. The same holds for board id `nucleo-c562re`
+(`cubemx2-hal2-stm32c562nucleo` here, `cubemx2-freertos-stm32c562nucleo` in
+automated-firmware-skills-freertos; both use the prefix `CUBE`, so `CUBE_WS` moves both).
+
+## Tool updates
+
+Every board profile pins the tool versions its bring-up was proven with (CubeMX, firmware package,
+bundles, PlatformIO platform, ModusToolbox tools, and `IDE_EXT_VERSION` for the VS Code extension).
+Vendors update these on their own, so a proven board can break without any change in this repo.
+
+| Tool | How it changes | What breaks | Risk |
+| --- | --- | --- | --- |
+| VS Code extension (STM32CubeIDE for VS Code, ModusToolbox for VS Code, PlatformIO IDE) | **silently**, VS Code auto-updates extensions; only one version stays installed | the IDE path: files the skills pre-write for the extension (`mx/.settings/*.store.json`, `launch.json`, ModusToolbox `vscode_fix.py`, which copies the 1.12.0 rules) may no longer match - prompts come back, debug launch fails | **high** |
+| STM32Cube bundles (GCC, CMake, Ninja, Programmer, gdbserver, clangd) | the extension's bundle manager adds versions side by side | nothing while the pinned one stays; a removed pin fails build / flash / debug | medium |
+| STM32CubeMX / CubeMX2, firmware packages | installer / updater by the developer; one CubeMX version at a time | regen output (headless script commands, generated code), syscalls paths | medium |
+| ModusToolbox tools, PlatformIO platforms, MCUXpresso SDK | installer / `pio pkg update`; usually side by side | build flags, BSP layout, `make vscode` format | medium |
+| VS Code itself, Git for Windows, Python | auto-update | rarely: CLI options, `grep`/`sed` behaviour in Git Bash | low |
+
+**Detect.** `check_tools.sh` shows a WARN when the installed extension differs from `IDE_EXT_VERSION`,
+and a BAD when a pinned tool is missing. `update_tools.sh <board>` lists every pin as `same`,
+`newer` (pinned installed, a newer one too), `changed` (pinned gone, another installed) or
+`missing`.
+
+**Follow only after a yes.** With anything `newer` or `changed`, `update_tools.sh` prints
+`UPDATE: AVAILABLE n` and stops with `ACTION: APPROVE` (exit 10). Staying is fine while the pinned
+versions are installed. When the developer agrees, `update_tools.sh <board> --apply --yes` re-pins
+the profile's `KEY=value` lines and appends a dated **"not re-qualified yet"** line to the board's
+verification log - it builds and flashes nothing.
+
+**Re-qualify.** The levels in the log stay with the old versions until the same gates pass again:
+regen + build (0 warnings), flash (asks first), the bring-up tests, and for an extension update the
+IDE path once in VS Code (open, build, debug, no "fix"/"configure" prompt). Then add the dated result
+line. The profile diff (old -> new pins) plus that line is the evidence for the upgrade.
+
+`update_tools.sh` exists in the STM32 CubeMX skills (L475, F4, N6, WB55); the `IDE_EXT_VERSION` check in
+`check_tools.sh` covers every skill whose profile sets it (STM32 and ModusToolbox).
+
+## Common options
+
+- **`serial_test.py`**:
+  - `--interactive` adds the steps that need a person (press a button, look at an LED).
+  - `--only-interactive` runs just those steps.
+  - `--only <regex>` runs only the steps whose name matches.
+  - `--wait-port <s>` waits for the port to come back after a USB replug.
+  - `--wait-boot` listens for the boot banner instead of syncing with `info`.
+- **`clean.sh`**:
+  - Without `--yes` it is a dry run.
+  - The default deletes build outputs only; `--apps` also deletes whole apps (your source code) and
+    `.bench/`.
+- **Overrides** (per skill and per shell; for every skill on this PC use the
+  [apps workspace](#apps-workspace) setting):
+
+  | Skill | Workspace | Boards folder | Board serial | Console port |
+  | --- | --- | --- | --- | --- |
+  | modus-pdl-edgitalk | `PSE84_WS` | `PSE84_BOARDS_DIR` | `PSE84_PROBE_SERIAL` | `PSE84_CONSOLE` |
+  | pio-arduino-rpipico2w | `PICO_WS` | `PICO_BOARDS_DIR` | `PICO_USB_SERIAL` | `PICO_CONSOLE` |
+  | cubemx2-hal2-stm32c562nucleo, cubemx2-freertos-stm32c562nucleo | `CUBE_WS` | `CUBE_BOARDS_DIR` | `CUBE_PROBE_SERIAL` | `CUBE_CONSOLE` |
+  | cubemx-hal-stm32l475iot | `L4_WS` | `L4_BOARDS_DIR` | `L4_PROBE_SERIAL` | `L4_CONSOLE` |
+  | cubemx-hal-stm32wb55nucleo | `WB_WS` | `WB_BOARDS_DIR` | `WB_PROBE_SERIAL` | `WB_CONSOLE` |
+  | pio-arduino-unor4wifi | `UNO_WS` | `UNO_BOARDS_DIR` | `UNO_USB_SERIAL` | `UNO_CONSOLE` |
+  | mcux-sdk-frdmmcxn947 | `MCX_WS` | `MCX_BOARDS_DIR` | `MCX_PROBE_SERIAL` | `MCX_CONSOLE` |
+- **Your own board**: put its profile in `<project>/boards/<id>/<skill>/board.env` (copy
+  `boards/_template/`). The scripts find it before the repo's boards.
+- **Flashing**: always check the board, the app and the image hash yourself before `flash.sh --yes`.
+  The script checks identity, not intent.
+
+## Repository layout
+
+```
+skills/<skill>/SKILL.md, scripts/, reference/, templates/   one skill per toolchain + MCU family
+lib/common.sh, lib/fwtest.py, lib/func/                      shared by all skills
+lib/unity/, lib/test_func/, lib/unity_read.py                on-target unit tests: Unity, test driver main, test log, reader
+lib/fw_workspace.sh, lib/fwpaths.py                          this PC's apps workspace (shell / Python)
+boards/<id>/README.md                                        board hardware, tool-independent
+boards/<id>/<skill>/                                         that skill's board profile + log
+boards/index.json                                            board ids, aliases, MCU, evidence level per profile
+lib/host/, host_test.sh, check_layers.py                     M2 checks: layer rules, optional host unit tests (test stub)
+tools/validate_skills.py                                     repo validator (run before every commit)
+apps/<app>/                                                  generated projects (or this PC's workspace, see Apps workspace)
+apps/.bench/<id>.env                                         per-PC instance data (git-ignored; in the workspace)
+```
+
+## Adding a skill (a new toolchain or MCU family)
+
+1. `skills/<toolchain>-<framework>-<board>/SKILL.md` mapping the stage table above to the tool's commands.
+2. `scripts/env.sh` sourcing `lib/common.sh`; one script per stage with the gate lines and exit
+   codes above; `serial_test.py` as a thin wrapper of `lib/fwtest.py`.
+   `open_ide.sh` (stage 2d) hands apps to VS Code + the toolchain's extension (`IDE_EXT`).
+3. A `board.h` implementation per board under `templates/_common`, reusing `lib/func`.
+4. For each board: `boards/<id>/<skill>/` profile + verification log (`boards/_template/`).
+5. hello-world and push-to-light templates with the shared test specs; run all M1 stages on hardware.
+6. Add the skill to the tables in the top-level `README.md` and its boards to `boards/index.json`.
+7. `python tools/validate_skills.py` until `VALIDATE: PASS`.

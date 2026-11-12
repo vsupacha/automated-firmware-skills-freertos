@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "about": "Machine-readable board index. Resolve a board name with 'aliases' (case, spaces, '-' and '_' ignored) to exactly one id, or ask the user when nothing or several match. Evidence levels come from dated lines in each profile's README (log); tools/validate_skills.py checks this file against the folders. A profile's 'renamed' map names templates verified under an earlier template name (shown with ' *'); tools/board_status.py writes the README level tables from this file.",
+  "evidence_levels": {
+    "unverified": "profile exists, nothing run on hardware",
+    "built": "build gate passed",
+    "flashed": "programmed and verified on the board",
+    "tested": "automatic serial tests passed (RESULT: PASS)",
+    "interactive": "interactive tests passed: a person pressed buttons, the console gave the evidence",
+    "observed": "a person confirmed what the board showed (LED lit)"
+  },
+  "boards": [
+    {
+      "id": "nucleo-c562re",
+      "name": "ST NUCLEO-C562RE",
+      "aliases": [
+        "NUCLEO-C562RE",
+        "Nucleo C562RE",
+        "Nucleo C562",
+        "C562RE"
+      ],
+      "mcu": "STM32C562RET6",
+      "mcu_family": "ST STM32C5",
+      "profiles": {
+        "cubemx2-freertos-stm32c562nucleo": {
+          "level": "tested",
+          "date": "2026-11-12",
+          "templates": {
+            "hello-world": "built",
+            "blink": "built",
+            "push-to-light": "built",
+            "blink-rate": "tested"
+          },
+          "log": "boards/nucleo-c562re/cubemx2-freertos-stm32c562nucleo/README.md"
+        }
+      }
+    }
+  ]
+}

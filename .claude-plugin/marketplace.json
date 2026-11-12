@@ -1,0 +1,62 @@
+{
+  "name": "automated-firmware-skills-freertos",
+  "owner": {
+    "name": "Supachai Vorapojpisut"
+  },
+  "description": "Gated FreeRTOS firmware workflows (tools check, project with the RTOS middleware, IDE, build, flash, test, debug) per toolchain and board. Bare-metal skills are in automated-firmware-skills.",
+  "plugins": [
+    {
+      "name": "firmware-tools",
+      "displayName": "Firmware skills: FreeRTOS tools (clean-room test)",
+      "source": "./",
+      "description": "Tool skills of the FreeRTOS repository: cleanroom-test (a fresh agent follows only the docs; findings become doc and script fixes). Installed with firmware-freertos.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Supachai Vorapojpisut"
+      },
+      "homepage": "https://github.com/vsupacha/automated-firmware-skills-freertos",
+      "repository": "https://github.com/vsupacha/automated-firmware-skills-freertos",
+      "license": "MIT",
+      "category": "embedded",
+      "keywords": [
+        "firmware",
+        "testing",
+        "clean-room",
+        "freertos"
+      ],
+      "skills": [
+        "./skills/cleanroom-test"
+      ]
+    },
+    {
+      "name": "firmware-freertos",
+      "displayName": "Firmware skills: FreeRTOS (STM32)",
+      "source": "./",
+      "description": "FreeRTOS on ST NUCLEO-C562RE (STM32C5) with STM32CubeMX2 1.2.0 and ST's FreeRTOS middleware pack: tasks for the bring-up demos, HAL tick on TIM6, task and stack status over the console, ST-LINK flash, serial tests and debug.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Supachai Vorapojpisut"
+      },
+      "homepage": "https://github.com/vsupacha/automated-firmware-skills-freertos",
+      "repository": "https://github.com/vsupacha/automated-firmware-skills-freertos",
+      "license": "MIT",
+      "category": "embedded",
+      "keywords": [
+        "firmware",
+        "embedded",
+        "freertos",
+        "rtos",
+        "stm32",
+        "stm32cubemx2",
+        "stm32c5",
+        "st-link"
+      ],
+      "skills": [
+        "./skills/cubemx2-freertos-stm32c562nucleo"
+      ],
+      "dependencies": [
+        "firmware-tools"
+      ]
+    }
+  ]
+}

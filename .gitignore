@@ -1,0 +1,52 @@
+# --- apps workspace: per-PC and regenerable content (never commit) ---
+apps/mtb_shared/
+apps/.cache/
+# probe serials + COM ports of this PC (discover.sh)
+apps/.bench/
+apps/*/build/
+apps/*/proj_*/build/
+apps/*/proj_*/libs/
+# build/flash/test logs contain probe serials and local paths
+apps/*/logs/
+apps/*/.git/
+# PlatformIO build outputs
+apps/*/.pio/
+# ESP-IDF: sdkconfig.<env> is regenerated from sdkconfig.defaults; managed IDF components
+apps/*/sdkconfig.*
+!apps/*/sdkconfig.defaults
+apps/*/managed_components/
+# STM32CubeMX2 generated project + working copy (regenerated from <app>.ioc2 by regen.sh)
+apps/*/mx/
+apps/*/.mx/
+# ModusToolbox query files hold absolute local paths
+.mtbqueryapi
+.ninja_log
+nsc_veneer.o
+
+# --- flash dumps of your own boards (backup.sh) ---
+backup/
+
+# --- local renders (Quarto preview of the READMEs) ---
+/*.html
+*_files/
+.quarto/
+_site/
+
+# --- vendor manuals/datasheets: link them from the board README, never commit the PDF ---
+boards/**/*.pdf
+
+# --- Python / editors / OS ---
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- local handoff notes between PCs (Claude Code loads it; never committed) ---
+CLAUDE.local.md
+.claude/settings.local.json
+
+# --- behaviour eval results (claude plugin eval) ---
+evals/results/
