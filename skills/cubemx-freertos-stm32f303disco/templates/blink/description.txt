@@ -1,0 +1,1 @@
+ledTask toggles LED1 every 500 ms and prints "BLINK led1=0|1" (FreeRTOS); console task answers info / tasks

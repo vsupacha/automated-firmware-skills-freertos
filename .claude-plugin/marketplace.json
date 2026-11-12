@@ -32,7 +32,7 @@
       "name": "firmware-freertos",
       "displayName": "Firmware skills: FreeRTOS (STM32)",
       "source": "./",
-      "description": "FreeRTOS on ST NUCLEO-C562RE (STM32C5) with STM32CubeMX2 1.2.0 and ST's FreeRTOS middleware pack: tasks for the bring-up demos, HAL tick on TIM6, task and stack status over the console, ST-LINK flash, serial tests and debug.",
+      "description": "FreeRTOS on ST NUCLEO-C562RE (STM32C5, STM32CubeMX2 1.2.0 + ST's FreeRTOS pack: task and stack status over the console, serial tests, debug) and ST STM32F3DISCOVERY (STM32F303, classic STM32CubeMX 6.18 + FreeRTOS V10 from STM32CubeF3, SWO console): tasks for the bring-up demos, HAL tick on TIM6, ST-LINK flash.",
       "version": "0.1.0",
       "author": {
         "name": "Supachai Vorapojpisut"
@@ -49,10 +49,12 @@
         "stm32",
         "stm32cubemx2",
         "stm32c5",
+        "stm32f3",
         "st-link"
       ],
       "skills": [
-        "./skills/cubemx2-freertos-stm32c562nucleo"
+        "./skills/cubemx2-freertos-stm32c562nucleo",
+        "./skills/cubemx-freertos-stm32f303disco"
       ],
       "dependencies": [
         "firmware-tools"

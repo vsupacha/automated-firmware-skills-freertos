@@ -8,6 +8,14 @@ verification log, not here.
 ## [Unreleased]
 
 ### Added
+- 2026-11-12: board skill `cubemx-freertos-stm32f303disco` (ST STM32F3DISCOVERY, STM32F303VC): classic STM32CubeMX
+  6.18.1 + STM32CubeF3 1.11.6 with FreeRTOS V10.0.1 from the firmware package. `MX_CONFIG` adds the
+  HAL timebase TIM6, FreeRTOS (CMSIS-RTOS v2 wrapper; the apps use the native API), a 16 KB heap,
+  stack-overflow check 2 and high-water marks; `rtos_gate` checks the generated project; the overlay
+  makes the empty generated stack-overflow hook stop. Scripts and board layer from the bare-metal
+  skill `cubemx-hal-stm32f303disco` ([automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/cubemx-hal-stm32f303disco/SKILL.md)),
+  templates and `app_rtos.c/.h` from `cubemx2-freertos-stm32c562nucleo`. Console SWO only. All four
+  templates build with 0 warnings; blink-rate observed on the board (LD3 steps 1 s / 0.5 s / 0.2 s with B1).
 - 2026-11-12: repository split from [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills)
   (bare-metal skills stay there). Copies, no shared code: `lib/` (common.sh, fwtest.py, fwdebug.py,
   fwpaths.py, fw_workspace.sh, check_layers.py, host_test.sh + host/, func/), `tools/`

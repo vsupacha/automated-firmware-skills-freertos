@@ -12,6 +12,7 @@ task กับ stack ด้วย
 | บอร์ด | คู่มือ |
 | --- | --- |
 | ST NUCLEO-C562RE + FreeRTOS | [skills/cubemx2-freertos-stm32c562nucleo/README_TH.md](skills/cubemx2-freertos-stm32c562nucleo/README_TH.md) |
+| ST STM32F3DISCOVERY + FreeRTOS | [skills/cubemx-freertos-stm32f303disco/README_TH.md](skills/cubemx-freertos-stm32f303disco/README_TH.md) |
 
 ติดตั้ง plugin:
 

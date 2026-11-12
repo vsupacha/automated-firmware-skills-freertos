@@ -9,6 +9,7 @@ a dated verification log). Machine-readable: [index.json](index.json).
 | Board | MCU | Skill | Console (UART) | LED1 | BTN1 |
 | --- | --- | --- | --- | --- | --- |
 | [ST NUCLEO-C562RE](nucleo-c562re/README.md) | ST STM32C5 (STM32C562RET6) | `cubemx2-freertos-stm32c562nucleo` (FreeRTOS; bare metal: [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills/blob/main/boards/nucleo-c562re/README.md)) | ST-LINK virtual COM port | LD1 (green) | B1 (USER) |
+| [ST STM32F3DISCOVERY](stm32f3-discovery/README.md) | ST STM32F3 (STM32F303VCT6) | `cubemx-freertos-stm32f303disco` (FreeRTOS; bare metal: [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills/blob/main/boards/stm32f3-discovery/README.md)) | SWO (no virtual COM port) | LD3 (red) | B1 (blue) |
 
 ## Bring-up demos
 
@@ -24,6 +25,7 @@ The same three templates in every skill, checked with the same test specs (`test
 | Board | Skill | hello-world | blink | push-to-light |
 | --- | --- | --- | --- | --- |
 | [ST NUCLEO-C562RE](nucleo-c562re/README.md) | `cubemx2-freertos-stm32c562nucleo` | built | built | built |
+| [ST STM32F3DISCOVERY](stm32f3-discovery/README.md) | `cubemx-freertos-stm32f303disco` | built | built | built |
 <!-- board-status:end -->
 
 Levels: unverified < built < flashed < tested (automatic test PASS) < interactive (a person pressed

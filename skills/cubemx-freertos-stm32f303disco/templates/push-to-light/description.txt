@@ -1,0 +1,1 @@
+console task (SWO output; no console input on this board) + buttonTask: B1 toggles LD3 (FreeRTOS)
