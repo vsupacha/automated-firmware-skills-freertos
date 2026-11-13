@@ -1,0 +1,23 @@
+{
+  "baud": 115200,
+  "boot": {"expect": "READY", "timeout": 30},
+  "sync": {"send": "info", "expect": "READY"},
+  "steps": [
+    {"name": "info",            "send": "info",    "expect_re": ["^INFO app=blink-rate .*period_ms=1000 sample_ms=100 rtos=FreeRTOS V\\d"]},
+    {"name": "tasks + stack",   "send": "tasks",   "expect_re": ["^TASK name=ledTask state=\\w+ prio=2 stack_free=([5-9]\\d|\\d{3,})$", "^TASK name=buttonTask state=\\w+ prio=3 stack_free=([5-9]\\d|\\d{3,})$", "^TASK name=console state=\\w+ prio=1 stack_free=([5-9]\\d|\\d{3,})$", "^HEAP free=\\d+ min=\\d+ total=16384 tasks=\\d+$"]},
+    {"name": "blinks at 1 s",   "expect": ["BLINK led1=", "BLINK led1="], "timeout": 2.5, "pause": 0},
+    {"name": "event -> 500 ms", "send": "step",    "expect": ["PERIOD ms=500"]},
+    {"name": "blinks at 0.5 s", "expect": ["BLINK led1=", "BLINK led1="], "timeout": 1.3, "pause": 0},
+    {"name": "event -> 200 ms", "send": "step",    "expect": ["PERIOD ms=200"]},
+    {"name": "blinks at 0.2 s", "expect": ["BLINK led1=", "BLINK led1=", "BLINK led1="], "timeout": 0.9, "pause": 0},
+    {"name": "event -> 1 s",    "send": "step",    "expect": ["PERIOD ms=1000"]},
+    {"name": "read back",       "send": "period?", "expect": ["PERIOD ms=1000"]},
+    {"name": "console alive",   "send": "foo",     "expect": ["ERR unknown command"]},
+    {"name": "B1 -> 500 ms",    "interactive": true, "requires_re": "INFO app=blink-rate", "prompt": "Press and release {btn1} once - LD1 should then blink faster (0.5 s)",
+     "expect": ["EVT btn1=pressed", "PERIOD ms=500"], "timeout": 30},
+    {"name": "B1 -> 200 ms",    "interactive": true, "prompt": "Press {btn1} again - LD1 should blink fast (0.2 s)",
+     "expect": ["EVT btn1=pressed", "PERIOD ms=200"], "timeout": 30},
+    {"name": "B1 -> 1 s",       "interactive": true, "prompt": "Press {btn1} once more - LD1 back to slow (1 s); tell Claude what you saw",
+     "expect": ["EVT btn1=pressed", "PERIOD ms=1000"], "timeout": 30}
+  ]
+}

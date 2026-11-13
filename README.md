@@ -30,7 +30,7 @@ bash/Python, so a developer can run every stage by hand.
 | --- | --- | --- |
 | Windows 10/11 + Git for Windows (Git Bash) | every script | bash scripts |
 | Python 3 + `pyserial` | tests, debug | tested with Python 3.12 |
-| STM32CubeMX2 1.2.0 + ST's FreeRTOS pack 2.2.0 (C5), or classic STM32CubeMX 6.18.1 + STM32Cube_FW_F3 1.11.6 (F3); the STM32Cube bundles (GCC, CMake, Ninja, STM32CubeProgrammer) | setup onward | `check_tools.sh <board>` lists what is missing and the install command |
+| STM32CubeMX2 1.2.0 + ST's FreeRTOS pack 2.2.0 (C5), or classic STM32CubeMX 6.18.1 + STM32Cube_FW_F3 1.11.6 (F3) / STM32Cube_FW_L4 1.18.2 (L476); the STM32Cube bundles (GCC, CMake, Ninja, STM32CubeProgrammer) | setup onward | `check_tools.sh <board>` lists what is missing and the install command |
 | The board and its USB cable | connect, flash, test | build stages need no board |
 
 ## Skills and boards
@@ -39,8 +39,9 @@ bash/Python, so a developer can run every stage by hand.
 |---|---|---|---|---|
 | [cubemx2-freertos-stm32c562nucleo](skills/cubemx2-freertos-stm32c562nucleo/SKILL.md) | STM32CubeMX2 1.2.0 + HAL2 + FreeRTOS 11.3.1 (ST pack 2.2.0) + CMake | ST STM32C5 | [NUCLEO-C562RE](boards/nucleo-c562re/README.md) | [guide](skills/cubemx2-freertos-stm32c562nucleo/README.md) · [ไทย](skills/cubemx2-freertos-stm32c562nucleo/README_TH.md) |
 | [cubemx-freertos-stm32f303disco](skills/cubemx-freertos-stm32f303disco/SKILL.md) | STM32CubeMX 6.18 + STM32CubeF3 HAL + FreeRTOS V10.0.1 + CMake | ST STM32F3 | [STM32F3DISCOVERY](boards/stm32f3-discovery/README.md) | [guide](skills/cubemx-freertos-stm32f303disco/README.md) · [ไทย](skills/cubemx-freertos-stm32f303disco/README_TH.md) |
+| [cubemx-freertos-stm32l476disco](skills/cubemx-freertos-stm32l476disco/SKILL.md) | STM32CubeMX 6.18 + STM32CubeL4 HAL + FreeRTOS V10.3.1 + CMake | ST STM32L4 | [STM32L476G-DISCO](boards/stm32l476g-disco/README.md) | [guide](skills/cubemx-freertos-stm32l476disco/README.md) · [ไทย](skills/cubemx-freertos-stm32l476disco/README_TH.md) |
 
-The same boards' bare-metal skills: `cubemx2-hal2-stm32c562nucleo` and `cubemx-hal-stm32f303disco` in
+The same boards' bare-metal skills: `cubemx2-hal2-stm32c562nucleo`, `cubemx-hal-stm32f303disco` and `cubemx-hal-stm32l476disco` in
 [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills).
 
 Tool skills (plugin `firmware-tools`, installed with `firmware-freertos`):

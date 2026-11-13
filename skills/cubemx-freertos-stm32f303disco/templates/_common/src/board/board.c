@@ -186,22 +186,86 @@ void board_console_flush(void)
 {
 }
 
+/* Whole lines per task: stdout is unbuffered, so one printf() reaches _write() in
+ * several pieces ("TASK name=", the name, ...). A mutex around each piece is not
+ * enough - another task's line could land between two pieces (seen on the board,
+ * 2026-11-12: "TASK name=BBLINK led1=1"). Each task's pieces are collected in its
+ * own line slot until '\n' and the whole line is sent under console_lock. Before
+ * the scheduler runs, in an ISR, or when all slots are taken, bytes go out at once.
+ * A line without '\n' (an echoed key) appears when its line ends. */
+#define LINE_SLOTS      (8U)
+#define LINE_MAX        (160U)
+
+typedef struct
+{
+    TaskHandle_t owner;
+    uint16_t     len;
+    char         buf[LINE_MAX];
+} line_slot_t;
+
+static line_slot_t line_slots[LINE_SLOTS];
+
+static void console_send(const char *p, uint32_t n)
+{
+    for (uint32_t i = 0U; i < n; i++)
+    {
+        (void)ITM_SendChar((uint32_t)(uint8_t)p[i]);
+    }
+}
+
+static line_slot_t *line_slot_of(TaskHandle_t task)
+{
+    line_slot_t *free_slot = NULL;
+    for (uint32_t i = 0U; i < LINE_SLOTS; i++)
+    {
+        if (line_slots[i].owner == task)
+        {
+            return &line_slots[i];
+        }
+        if ((line_slots[i].owner == NULL) && (free_slot == NULL))
+        {
+            free_slot = &line_slots[i];
+        }
+    }
+    if (free_slot != NULL)
+    {
+        free_slot->owner = task;
+        free_slot->len   = 0U;
+    }
+    return free_slot;
+}
+
 /* printf() -> ITM port 0 / SWO (overrides the weak _write of the generated syscalls.c) */
 int _write(int file, char *ptr, int len)
 {
     (void)file;
-    bool lock = (console_lock != NULL) && scheduler_running() && !in_isr();
-    if (lock)
+    if (len <= 0)
     {
-        (void)xSemaphoreTake(console_lock, portMAX_DELAY);
+        return len;
     }
-    for (int i = 0; i < len; i++)
+    if ((console_lock == NULL) || !scheduler_running() || in_isr())
     {
-        (void)ITM_SendChar((uint32_t)(uint8_t)ptr[i]);
+        console_send(ptr, (uint32_t)len);
+        return len;
     }
-    if (lock)
+    (void)xSemaphoreTake(console_lock, portMAX_DELAY);
+    line_slot_t *s = line_slot_of(xTaskGetCurrentTaskHandle());
+    if (s == NULL)
     {
-        (void)xSemaphoreGive(console_lock);
+        console_send(ptr, (uint32_t)len);
     }
+    else
+    {
+        for (int i = 0; i < len; i++)
+        {
+            s->buf[s->len++] = ptr[i];
+            if ((ptr[i] == '\n') || (s->len == LINE_MAX))
+            {
+                console_send(s->buf, s->len);
+                s->len = 0U;
+            }
+        }
+    }
+    (void)xSemaphoreGive(console_lock);
     return len;
 }

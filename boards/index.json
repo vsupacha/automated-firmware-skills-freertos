@@ -61,6 +61,34 @@
           "log": "boards/stm32f3-discovery/cubemx-freertos-stm32f303disco/README.md"
         }
       }
+    },
+    {
+      "id": "stm32l476g-disco",
+      "name": "ST STM32L476G-DISCO (32L476GDISCOVERY)",
+      "aliases": [
+        "STM32L476G-DISCO",
+        "32L476GDISCOVERY",
+        "STM32L476G-DK",
+        "STM32L476 Discovery",
+        "L476 Discovery",
+        "MB1184"
+      ],
+      "mcu": "STM32L476VGT6",
+      "mcu_family": "ST STM32L4",
+      "profiles": {
+        "cubemx-freertos-stm32l476disco": {
+          "level": "tested",
+          "date": "2026-11-12",
+          "templates": {
+            "hello-world": "built",
+            "blink": "built",
+            "push-to-light": "built",
+            "blink-rate": "tested"
+          },
+          "note": "FreeRTOS V10.3.1 from STM32CubeL4 (CMSIS-RTOS v2 wrapper, native API in the apps), HAL tick on TIM6; blink-rate flashed, tests 12/12 incl. the tasks/heap report (joystick steps not run) (2026-11-12)",
+          "log": "boards/stm32l476g-disco/cubemx-freertos-stm32l476disco/README.md"
+        }
+      }
     }
   ]
 }

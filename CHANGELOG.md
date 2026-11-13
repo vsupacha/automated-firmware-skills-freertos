@@ -7,7 +7,18 @@ verification log, not here.
 
 ## [Unreleased]
 
+### Fixed
+- 2026-11-12: FreeRTOS board layers (L476, F3, C5): console lines of two tasks could mix
+  (`TASK name=BBLINK led1=1` on the L476) - stdout is unbuffered and the mutex covered single
+  `_write()` pieces. `board.c` now collects each task's output in a per-task line slot and sends
+  whole lines under the mutex. Re-tested on the L476 only; F3 and C5 built, not re-run on the board.
+
 ### Added
+- 2026-11-12: board skill `cubemx-freertos-stm32l476disco` (ST STM32L476G-DISCO / 32L476GDISCOVERY, STM32L476VG): classic
+  STM32CubeMX 6.18.1 + STM32CubeL4 1.18.2 with FreeRTOS V10.3.1 from the firmware package, the same
+  FreeRTOS `MX_CONFIG` as the F3 skill plus USART2 on the ST-LINK virtual COM port. Scripts and board
+  layer from the bare-metal skill `cubemx-hal-stm32l476disco` ([automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills/blob/main/skills/cubemx-hal-stm32l476disco/SKILL.md)).
+  All four templates build with 0 warnings; blink-rate tested on the board (12/12, tasks/heap report).
 - 2026-11-12: board skill `cubemx-freertos-stm32f303disco` (ST STM32F3DISCOVERY, STM32F303VC): classic STM32CubeMX
   6.18.1 + STM32CubeF3 1.11.6 with FreeRTOS V10.0.1 from the firmware package. `MX_CONFIG` adds the
   HAL timebase TIM6, FreeRTOS (CMSIS-RTOS v2 wrapper; the apps use the native API), a 16 KB heap,

@@ -260,22 +260,83 @@ void board_console_flush(void)
     /* HAL_UART_Transmit() in _write() blocks until the data is sent */
 }
 
-/* newlib: printf/putchar end here (strong definition overrides the weak syscall) */
+/* Whole lines per task: stdout is unbuffered, so one printf() reaches _write() in
+ * several pieces ("TASK name=", the name, ...). A mutex around each piece is not
+ * enough - another task's line could land between two pieces (seen on the board,
+ * 2026-11-12: "TASK name=BBLINK led1=1"). Each task's pieces are collected in its
+ * own line slot until '\n' and the whole line is sent under console_lock. Before
+ * the scheduler runs, in an ISR, or when all slots are taken, bytes go out at once.
+ * A line without '\n' (an echoed key) appears when its line ends. */
+#define LINE_SLOTS      (8U)
+#define LINE_MAX        (160U)
+
+typedef struct
+{
+    TaskHandle_t owner;
+    uint16_t     len;
+    char         buf[LINE_MAX];
+} line_slot_t;
+
+static line_slot_t line_slots[LINE_SLOTS];
+
+static void console_send(const char *p, uint32_t n)
+{
+    (void)HAL_UART_Transmit(console, p, n, 100U);
+}
+
+static line_slot_t *line_slot_of(TaskHandle_t task)
+{
+    line_slot_t *free_slot = NULL;
+    for (uint32_t i = 0U; i < LINE_SLOTS; i++)
+    {
+        if (line_slots[i].owner == task)
+        {
+            return &line_slots[i];
+        }
+        if ((line_slots[i].owner == NULL) && (free_slot == NULL))
+        {
+            free_slot = &line_slots[i];
+        }
+    }
+    if (free_slot != NULL)
+    {
+        free_slot->owner = task;
+        free_slot->len   = 0U;
+    }
+    return free_slot;
+}
+
+/* printf() -> the console UART (overrides the weak _write of the generated syscalls.c) */
 int _write(int file, char *ptr, int len)
 {
     (void)file;
-    if ((console != NULL) && (len > 0))
+    if ((console == NULL) || len <= 0)
     {
-        bool lock = (console_lock != NULL) && scheduler_running() && !in_isr();
-        if (lock)
+        return len;
+    }
+    if ((console_lock == NULL) || !scheduler_running() || in_isr())
+    {
+        console_send(ptr, (uint32_t)len);
+        return len;
+    }
+    (void)xSemaphoreTake(console_lock, portMAX_DELAY);
+    line_slot_t *s = line_slot_of(xTaskGetCurrentTaskHandle());
+    if (s == NULL)
+    {
+        console_send(ptr, (uint32_t)len);
+    }
+    else
+    {
+        for (int i = 0; i < len; i++)
         {
-            (void)xSemaphoreTake(console_lock, portMAX_DELAY);
-        }
-        (void)HAL_UART_Transmit(console, ptr, (uint32_t)len, 100U);
-        if (lock)
-        {
-            (void)xSemaphoreGive(console_lock);
+            s->buf[s->len++] = ptr[i];
+            if ((ptr[i] == '\n') || (s->len == LINE_MAX))
+            {
+                console_send(s->buf, s->len);
+                s->len = 0U;
+            }
         }
     }
+    (void)xSemaphoreGive(console_lock);
     return len;
 }

@@ -10,6 +10,7 @@ a dated verification log). Machine-readable: [index.json](index.json).
 | --- | --- | --- | --- | --- | --- |
 | [ST NUCLEO-C562RE](nucleo-c562re/README.md) | ST STM32C5 (STM32C562RET6) | `cubemx2-freertos-stm32c562nucleo` (FreeRTOS; bare metal: [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills/blob/main/boards/nucleo-c562re/README.md)) | ST-LINK virtual COM port | LD1 (green) | B1 (USER) |
 | [ST STM32F3DISCOVERY](stm32f3-discovery/README.md) | ST STM32F3 (STM32F303VCT6) | `cubemx-freertos-stm32f303disco` (FreeRTOS; bare metal: [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills/blob/main/boards/stm32f3-discovery/README.md)) | SWO (no virtual COM port) | LD3 (red) | B1 (blue) |
+| [ST STM32L476G-DISCO](stm32l476g-disco/README.md) | ST STM32L4 (STM32L476VGT6) | `cubemx-freertos-stm32l476disco` (FreeRTOS; bare metal: [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills/blob/main/boards/stm32l476g-disco/README.md)) | ST-LINK virtual COM port | LD4 (red) | joystick center |
 
 ## Bring-up demos
 
@@ -26,6 +27,7 @@ The same three templates in every skill, checked with the same test specs (`test
 | --- | --- | --- | --- | --- |
 | [ST NUCLEO-C562RE](nucleo-c562re/README.md) | `cubemx2-freertos-stm32c562nucleo` | built | built | built |
 | [ST STM32F3DISCOVERY](stm32f3-discovery/README.md) | `cubemx-freertos-stm32f303disco` | built | built | built |
+| [ST STM32L476G-DISCO (32L476GDISCOVERY)](stm32l476g-disco/README.md) | `cubemx-freertos-stm32l476disco` | built | built | built |
 <!-- board-status:end -->
 
 Levels: unverified < built < flashed < tested (automatic test PASS) < interactive (a person pressed

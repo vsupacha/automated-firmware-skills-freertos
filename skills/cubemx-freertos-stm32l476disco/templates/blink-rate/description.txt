@@ -1,0 +1,1 @@
+buttonTask samples B1 every 100 ms and sends a toggle event to ledTask, which blinks LD1 at 1 s -> 0.5 s -> 0.2 s -> 1 s (FreeRTOS)
