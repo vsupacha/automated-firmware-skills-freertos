@@ -22,11 +22,11 @@ Rules:
   Do not search the conversation history or other sessions, and do NOT read CLAUDE.local.md (private
   notes a new developer does not have).
 - Choices made in advance: board nucleo-c562re, skill cubemx2-hal2-stm32c562nucleo, app name
-  rtos-clean-test, apps workspace = this PC's chosen one (D:/fw-ws, already set).
+  rtos-clean-test, apps workspace = this PC's chosen one (already set; `bash lib/fw_workspace.sh show` prints it).
 - STOP after the build: do NOT flash, do NOT run discover/serial tests/debug (no board access at all).
   Also write the test spec you would use for stage 6 (tests/<name>.json in the app) - it will be run later.
 - Do NOT modify anything under skills/, boards/, lib/, docs/, tools/, milestones.env or the README files,
-  and do not change git or tool settings. Work only in D:/fw-ws/rtos-clean-test and your own scratch
+  and do not change git or tool settings. Work only in `<apps workspace>/rtos-clean-test` and your own scratch
   files. Install nothing (no packs, no bundles): on "ACTION: SETUP" or a missing pack stop that stage
   and report it. If the docs are wrong or a script fails, work around it if you can (inside your app),
   and record it.

@@ -33,8 +33,8 @@ Build, connect and flash; the test stage is planned. Demo levels per template an
 In Claude Code, from your project folder:
 
 ```
-/plugin marketplace add vsupacha/automated-firmware-skills
-/plugin install firmware-stm32@automated-firmware-skills
+/plugin marketplace add vsupacha/automated-firmware-skills-freertos
+/plugin install firmware-freertos@automated-firmware-skills-freertos
 ```
 
 It brings `firmware-tools` along. `automated-firmware-skills@automated-firmware-skills` installs

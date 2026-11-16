@@ -7,6 +7,14 @@ verification log, not here.
 
 ## [Unreleased]
 
+### Changed
+- 2026-11-16: guideline pass for low-effort agents. Every board `SKILL.md` starts with a **Main path** block
+  (commands with the board id and gate lines; `flash.sh` shown without `--yes`); `help.sh` shows
+  `flash.sh <app> [--yes]` and lists `debug.sh`; board sheets say `<app folder>`; skill guides install this
+  repository's own plugin (they named the bare-metal marketplace); README no longer says every skill uses
+  STM32CubeMX2; docs/workflow.md lists what is not in this repository; the clean-room prompt no longer names
+  one PC's workspace path. README: Related repositories.
+
 ### Fixed
 - 2026-11-12: FreeRTOS board layers (L476, F3, C5): console lines of two tasks could mix
   (`TASK name=BBLINK led1=1` on the L476) - stdout is unbuffered and the mutex covered single

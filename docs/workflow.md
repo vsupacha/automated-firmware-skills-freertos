@@ -4,6 +4,10 @@
 > contract ([automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills)). Sections
 > about other toolchains and skills refer to the original repository; the FreeRTOS skills follow every
 > shared rule here.
+> **Not in this repository:** `unit_test.sh` (no FreeRTOS skill has on-target unit tests yet), the PlatformIO,
+> ModusToolbox and other bare-metal skills in the tables, and the tool skills firmware-test, web-wizard,
+> sensor-debug and hw-troubleshooting - their links point at the original repository. Here: three
+> `*-freertos-*` board skills and cleanroom-test.
 
 Every skill in `skills/` drives one toolchain with one framework for one board, named
 **`<toolchain>-<framework>-<board>`** (lowercase, hyphens only between the three parts), e.g.

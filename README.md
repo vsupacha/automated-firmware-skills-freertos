@@ -12,10 +12,10 @@ bash/Python, so a developer can run every stage by hand.
 
 - **Skill = toolchain + framework + board** (`skills/<toolchain>-freertos-<board>/`): `SKILL.md`,
   scripts, references, app templates.
-- **The RTOS comes from the vendor tool.** `new_app.sh` creates the board project with STM32CubeMX2,
-  adds ST's FreeRTOS middleware with the CLI, moves the HAL timebase to TIM6, sets FPU context save,
-  heap and stack-overflow checking, and reads every value back; `regen.sh` refuses a generated
-  project without FreeRTOS (`RTOS:` line).
+- **The RTOS comes from the vendor tool.** `new_app.sh` creates the board project with the board's
+  configurator (the STM32CubeMX2 CLI on the C5, a classic STM32CubeMX script on the F3 and L476), adds the
+  FreeRTOS middleware, moves the HAL timebase off SysTick (TIM6) and sets heap and stack-overflow checking
+  (on the C5 also FPU context save); `regen.sh` refuses a generated project without FreeRTOS (`RTOS:` line).
 - **Same layers as bare metal.** `src/board/` (RTOS-aware: `vTaskDelay`, console mutex, RX by
   interrupt), `src/func/` (portable services - no RTOS headers, `lib/check_layers.py` fails them
   there), and the execution layer (`app_main.c`, `app_rtos.c`) that owns the tasks.
@@ -72,6 +72,27 @@ docs/                    workflow.md (stages, gates), board-api.md (layers, boar
 tools/                   validate_skills.py, board_status.py
 milestones.env           active milestones (board stages need M1)
 ```
+
+## Related repositories
+
+Five repositories work together; each one is usable on its own.
+
+| Repository | Scope |
+|---|---|
+| [automated-firmware-skills](https://github.com/vsupacha/automated-firmware-skills) | bare-metal MCU skills (STM32Cube, PlatformIO, ModusToolbox, MCUXpresso) and the support tool skills: firmware-test, cleanroom-test, hw-troubleshooting, sensor-debug, web-wizard |
+| **automated-firmware-skills-freertos** (this repository) | FreeRTOS skills (STM32 C5, F3, L476) |
+| [automated-firmware-skills-rtthread](https://github.com/vsupacha/automated-firmware-skills-rtthread) | RT-Thread skills with Kconfig recipes (Renesas RA8 Vision Board and Titan Board, PSOC Edge Edgi-Talk) |
+| [automated-firmware-skills-emblinux](https://github.com/vsupacha/automated-firmware-skills-emblinux) | embedded-Linux boards (Arduino UNO Q: App Lab Bricks + Zephyr sketch) |
+| [firmware-dev-life-cycle](https://github.com/vsupacha/firmware-dev-life-cycle) | local web UI and phase contracts: pick a board, run the stages of any repository above (Auto page) or create an app and open its IDE (IDE page), with gates, logs and artifacts on screen |
+
+To use several, clone them side by side in one folder; `firmware-dev-life-cycle` then finds the skill
+repositories there (its `providers/*.json`). They share conventions - stage numbers, gate lines, exit code
+10 with an `ACTION:` line for a developer step, one per-PC apps workspace in `~/.fw-skills.env` - but no
+code: `lib/` is a copy in each repository.
+
+Support tool skills that are not in this repository: `hw-troubleshooting` and `sensor-debug` work with any
+board whose firmware prints console lines - use them from a clone of automated-firmware-skills.
+`web-wizard` reads that repository's own boards and does not cover the boards here.
 
 ## Contributing
 

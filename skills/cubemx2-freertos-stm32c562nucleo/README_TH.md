@@ -30,8 +30,8 @@ Git Bash ก็ได้ ภาษาอังกฤษ: [README.md](README.md) 
 ใน Claude Code จากโฟลเดอร์โปรเจกต์ของคุณ:
 
 ```
-/plugin marketplace add vsupacha/automated-firmware-skills
-/plugin install firmware-stm32@automated-firmware-skills
+/plugin marketplace add vsupacha/automated-firmware-skills-freertos
+/plugin install firmware-freertos@automated-firmware-skills-freertos
 ```
 
 จะได้ `firmware-tools` มาด้วย ถ้าใช้ `automated-firmware-skills@automated-firmware-skills` จะได้ทุกบอร์ด
