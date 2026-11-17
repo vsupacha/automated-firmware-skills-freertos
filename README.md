@@ -60,6 +60,12 @@ the test-spec format: [docs/workflow.md](docs/workflow.md) (copy of the original
 /plugin install firmware-freertos@automated-firmware-skills-freertos
 ```
 
+`firmware-freertos` installs `firmware-tools` with it. The tool skills alone:
+
+```
+/plugin install firmware-tools --marketplace vsupacha/automated-firmware-skills-freertos
+```
+
 ## Layout
 
 ```
