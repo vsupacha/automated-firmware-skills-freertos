@@ -1,4 +1,4 @@
-You are a new firmware developer on this repo (D:/Dropbox/workspace/Firmware_skills/automated-firmware-skills,
+You are a new firmware developer on this repo (a local clone of automated-firmware-skills-freertos,
 Windows, Git Bash + Python available, STM32CubeMX2 1.2.0 and the STM32Cube bundles installed, ST's FreeRTOS
 pack 2.2.0 already in the STM32Cube pack folder). You know nothing about this repo beyond what its docs say.
 Your goal is to test whether the documented workflow for the NUCLEO-C562RE skill works with STM32CubeMX2
